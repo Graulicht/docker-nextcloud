@@ -1,0 +1,43 @@
+version: '3'
+services:
+  nginx-proxy:
+    image: jwilder/nginx-proxy:alpine
+    container_name: nginx-proxy
+    labels:
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.docker_gen"
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy"
+    ports:
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./proxy/certs:/etc/nginx/certs:rw
+      - ./proxy/vhost.d:/etc/nginx/vhost.d:rw
+      - ./proxy/html:/usr/share/nginx/html:rw
+    networks:
+      - proxy 
+    restart: always
+  
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: nextcloud-letsencrypt
+    depends_on:
+      - nginx-proxy
+    networks:
+      - proxy
+    volumes:
+      - ./proxy/certs:/etc/nginx/certs:rw
+      - ./proxy/vhost.d:/etc/nginx/vhost.d:rw
+      - ./proxy/html:/usr/share/nginx/html
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: always
+    environment:
+      - DEBUG=true
+
+networks:
+  proxy: 
+    external: true
+  letsencrypt: 
+    external: true
+
+
